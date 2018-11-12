@@ -1,0 +1,20 @@
+{
+  "name": "burglar-alerts-camera-ftp-source",
+  "config": {
+    "connector.class": "com.datamountaineer.streamreactor.connect.ftp.source.FtpSourceConnector",
+    "tasks.max": 1,
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "com.github.fbascheper.kafka.connect.converter.image.ImageGrayScaleConverter",
+    "connect.ftp.address": "vsftpd.local:21",
+    "connect.ftp.user": "photo",
+    "connect.ftp.password": "upload",
+    "connect.ftp.refresh": "PT1M",
+    "connect.ftp.file.maxage": "P14D",
+    "connect.ftp.keystyle": "string",
+    "connect.ftp.monitor.update": "/home/virtual/photo/photo/:burglar-alerts-camera-ftp-topic",
+    "connect.ftp.sourcerecordconverter": "com.datamountaineer.streamreactor.connect.ftp.source.NopSourceRecordConverter",
+    "connect.ftp.fileconverter": "com.datamountaineer.streamreactor.connect.ftp.source.SimpleFileConverter",
+    "connect.ftp.filter": ".*",
+    "connect.ftp.protocol": "ftp"
+  }
+}

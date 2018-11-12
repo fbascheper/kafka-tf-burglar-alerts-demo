@@ -1,0 +1,16 @@
+{
+  "name": "burglar-alerts-telegram-sink",
+  "config": {
+    "connector.class": "com.github.fbascheper.kafka.connect.telegram.TelegramSinkConnector",
+    "tasks.max": 1,
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry.local:32281",
+    "enhanced.avro.schema.support": "true",
+    "topics": "burglar-alerts-telegram-topic",
+    "telegram.bot.name": "Kafka Connect bot",
+    "telegram.bot.username": "KafkaConnectBot",
+    "telegram.bot.api.key": "9999:xxxxxx",
+    "telegram.bot.destination.chat.id": "-999999"
+  }
+}

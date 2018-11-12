@@ -1,0 +1,20 @@
+{
+  "name": "burglar-alerts-smartlock-rest-source",
+  "config": {
+    "connector.class": "com.tm.kafka.connect.rest.RestSourceConnector",
+    "tasks.max": 1,
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "rest.source.poll.interval.ms": "60000",
+    "rest.source.method": "GET",
+    "rest.source.headers" : "Authorization: Bearer xxx-api-key",
+    "rest.source.url": "https://api.nuki.io/smartlock",
+    "rest.source.payload.converter.class": "com.tm.kafka.connect.rest.converter.source.SourceStringPayloadConverter",
+    "rest.source.properties": "Content-Type:application/json,Accept:application/json",
+    "rest.source.topic.selector": "com.tm.kafka.connect.rest.selector.SimpleTopicSelector",
+    "rest.http.connection.keep.alive.ms": "2000",
+    "rest.http.connection.max.idle": "0",
+    "rest.source.destination.topics": "burglar-alerts-smartlock-rest-topic"
+  }
+}
+¸

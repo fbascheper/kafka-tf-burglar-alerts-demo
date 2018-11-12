@@ -1,0 +1,151 @@
+---
+version: '3'
+services:
+  cp-zookeeper:
+    image: confluentinc/cp-zookeeper:5.0.0
+    hostname: zookeeper.local
+    container_name: cp-zookeeper
+    network_mode: "bridge"
+    ports:
+    - "32181:32181"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+    volumes:
+    - '/tmp/kafka-devoxx-2018-volumes/zk-data:/var/lib/zookeeper/data'
+    - '/tmp/kafka-devoxx-2018-volumes/zk-txn-logs:/var/lib/zookeeper/log'
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 32181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  cp-kafka:
+    image: confluentinc/cp-kafka:5.0.0
+    container_name: cp-kafka
+    hostname: kafka.local
+    network_mode: "bridge"
+    ports:
+    - "32081:32081"
+    restart: unless-stopped
+    links:
+    - cp-zookeeper
+    depends_on:
+    - cp-zookeeper
+    logging:
+      driver: "json-file"
+    volumes:
+    - '/tmp/kafka-devoxx-2018-volumes/kafka-data:/var/lib/kafka/data'
+    - '/tmp/kafka-devoxx-2018-volumes/kafka-node-1-secrets:/etc/kafka/secrets'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper.local:32181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka.local:32081,PLAINTEXT_HOST://kafka.local:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  cp-schema-registry:
+    image: confluentinc/cp-schema-registry:5.0.0
+    container_name: cp-schema-registry
+    hostname: schema-registry.local
+    network_mode: "bridge"
+    ports:
+    - "32281:32281"
+    restart: unless-stopped
+    links:
+    - cp-zookeeper
+    - cp-kafka
+    depends_on:
+    - cp-zookeeper
+    - cp-kafka
+    logging:
+      driver: "json-file"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: 'schema-registry.local'
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper.local:32181'
+      SCHEMA_REGISTRY_LISTENERS: 'http://schema-registry.local:32281'
+
+  cp-kafka-rest:
+    image: confluentinc/cp-kafka-rest:5.0.0
+    container_name: cp-kafka-rest
+    hostname: kafka-rest.local
+    network_mode: "bridge"
+    ports:
+    - "32380:32380"
+    restart: unless-stopped
+    links:
+    - cp-zookeeper
+    - cp-kafka
+    - cp-schema-registry
+    depends_on:
+    - cp-zookeeper
+    - cp-kafka
+    - cp-schema-registry
+    logging:
+      driver: "json-file"
+    environment:
+      KAFKA_REST_HOST_NAME: 'kafka-rest.local'
+      KAFKA_REST_ZOOKEEPER_CONNECT: 'zookeeper.local:32181'
+      KAFKA_REST_BOOTSTRAP_SERVERS: 'kafka.local:32081'
+      KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry.local:32281'
+      KAFKA_REST_LISTENERS: 'http://kafka-rest.local:32380'
+
+  cp-kafka-connect:
+    image: confluentinc/cp-kafka-connect:5.0.0
+    container_name: cp-kafka-connect
+    hostname: kafka-connect.local
+    network_mode: "bridge"
+    ports:
+    - "32580:32580"
+    restart: unless-stopped
+    links:
+    - cp-zookeeper
+    - cp-kafka
+    - cp-schema-registry
+    - vsftpd
+    depends_on:
+    - cp-zookeeper
+    - cp-kafka
+    - cp-schema-registry
+    logging:
+      driver: "json-file"
+    volumes:
+    - '/tmp/kafka-devoxx-2018-volumes/kafka-connect-plugins:/etc/kafka-connect/plugins'
+    environment:
+      CONNECT_ZOOKEEPER_CONNECT: 'zookeeper.local:32181'
+      CONNECT_BOOTSTRAP_SERVERS: 'kafka.local:32081'
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect.local
+      CONNECT_REST_PORT: 32580
+      CONNECT_GROUP_ID: kafka-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: kafka-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: kafka-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: kafka-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry.local:32281'
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry.local:32281'
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/plugins
+      CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+
+  vsftpd:
+    container_name: vsftpd
+    image: wildscamp/vsftpd
+    hostname: vsftpd.local
+    network_mode: "bridge"
+    restart: unless-stopped
+    ports:
+    - "21:21"
+    - "30000-30009:30000-30009"
+    volumes:
+    - '/tmp/kafka-devoxx-2018-volumes/vsftpd:/home/virtual/photo/photo'
+    environment:
+      PASV_ADDRESS: vsftpd.local
+      PASV_MIN_PORT: 30000
+      PASV_MAX_PORT: 30009
+      VSFTPD_USER_1: 'photo:upload::'
