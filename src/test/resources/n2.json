@@ -1,0 +1,59 @@
+[
+  {
+    "smartlockId": 234,
+    "accountId": 345,
+    "type": 0,
+    "authId": 258,
+    "name": "Test name",
+    "favorite": false,
+    "config": {
+      "name": "Config name",
+      "latitude": 1.22,
+      "longitude": 3.47,
+      "autoUnlatch": false,
+      "pairingEnabled": true,
+      "buttonEnabled": true,
+      "ledEnabled": true,
+      "ledBrightness": 3,
+      "timezoneOffset": 0,
+      "daylightSavingMode": 1,
+      "fobPaired": false,
+      "fobAction1": 4,
+      "fobAction2": 1,
+      "fobAction3": 2,
+      "singleLock": false,
+      "advertisingMode": 0,
+      "keypadPaired": false,
+      "homekitState": 0,
+      "timezoneId": 40
+    },
+    "advancedConfig": {
+      "totalDegrees": 300,
+      "unlockedPositionOffsetDegrees": 45,
+      "lockedPositionOffsetDegrees": -45,
+      "singleLockedPositionOffsetDegrees": -45,
+      "unlockedToLockedTransitionOffsetDegrees": 0,
+      "lngTimeout": 20,
+      "singleButtonPressAction": 1,
+      "doubleButtonPressAction": 5,
+      "detachedCylinder": false,
+      "batteryType": 0,
+      "automaticBatteryTypeDetection": true,
+      "unlatchDuration": 3,
+      "autoLockTimeout": 0
+    },
+    "state": {
+      "mode": 2,
+      "state": 1,
+      "trigger": 2,
+      "lastAction": 0,
+      "batteryCritical": false,
+      "doorState": 0
+    },
+    "firmwareVersion": 67074,
+    "serverState": 0,
+    "adminPinState": 0,
+    "creationDate": "2018-08-27T13:53:22.982Z",
+    "updateDate": "2018-11-04T16:19:08.915Z"
+  }
+]

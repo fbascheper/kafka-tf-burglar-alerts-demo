@@ -1,0 +1,54 @@
+[
+  {
+    "namespace": "com.github.fbascheper.alerts.model.avro",
+    "type": "record",
+    "name": "SerializableSmartLock",
+    "fields": [
+      {
+        "name": "smartlockId",
+        "type": "long"
+      },
+      {
+        "name": "accountId",
+        "type": "long"
+      },
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "state",
+        "type": "long",
+        "description": "The smartlock state: 0 .. uncalibrated, 1 .. locked, 2 .. unlocking, 3 .. unlocked, 4 .. locking, 5 .. unlatched, 6 .. unlocked (lock'n'go), 7 .. unlatching, 254 .. motor blocked, 255 .. undefined"
+      },
+      {
+        "name": "trigger",
+        "type": "long"
+      },
+      {
+        "name": "batteryCritical",
+        "type": "boolean"
+      },
+      {
+        "name": "updateEpochSeconds",
+        "type": "long"
+      }
+    ]
+  },
+  {
+    "namespace": "com.github.fbascheper.alerts.model.avro",
+    "type": "record",
+    "name": "SerializableImage",
+    "fields": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "imageData",
+        "type": "bytes"
+      }
+    ]
+  }
+]
+
