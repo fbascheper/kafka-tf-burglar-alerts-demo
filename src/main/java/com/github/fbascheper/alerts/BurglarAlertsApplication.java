@@ -12,15 +12,11 @@ import com.github.fbascheper.alerts.util.tensorflow.TensorFlowMatcher;
 import com.github.fbascheper.kafka.connect.telegram.TgMessage;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
-import lombok.val;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 
@@ -93,7 +89,7 @@ public class BurglarAlertsApplication {
 
         // ----------------------------------------------------------------------------------------------------
         // Construct a KStream from the camera images topic using (filename, image) as key,value pair.
-        val cameraSourceStream = builder
+        KStream<String, byte[]> cameraSourceStream = builder
                 .stream(SOURCE_TOPIC_CAMERA_IMAGES, Consumed.with(Serdes.String(), Serdes.ByteArray()));
 
         // ----------------------------------------------------------------------------------------------------
@@ -116,24 +112,24 @@ public class BurglarAlertsApplication {
 
         // Create a global table containing the current state of alerting (enabled, disabled).
         // The data from this global table will be fully replicated on each instance of this application.
-        val alertingEnabledGlobalKTable =
+        GlobalKTable<String, Integer> alertingEnabledGlobalKTable =
                 builder.globalTable(BURGLAR_ALERTING_STATE_TOPIC, Materialized.<String, Integer, KeyValueStore<Bytes, byte[]>>as(BURGLAR_ALERTING_STATE_STORE)
                         .withKeySerde(Serdes.String())
                         .withValueSerde(Serdes.Integer()));
 
         // Filter out all images when alert state is disabled (i.e. any lock is open)
-        val filteredSourceStream = cameraSourceStream
+        KStream<String, byte[]> filteredSourceStream = cameraSourceStream
                 .leftJoin(alertingEnabledGlobalKTable,
                         (filename, image) -> ALERT_STATE,
                         (image, enabled) -> enabled.equals(-1) ? image : new byte[]{})
                 .filter((key, value) -> value.length > 0);
 
         // Map images into Avro object for serialization
-        val imageStream = filteredSourceStream
+        KStream<String, SerializableImage> imageStream = filteredSourceStream
                 .mapValues((readOnlyKey, value) -> new SerializableImage(readOnlyKey, ByteBuffer.wrap(value)));
 
         // Stream Processor applying the analytic model
-        val telegramPhotoMessage = imageStream
+        KStream<String, TgMessage> telegramPhotoMessage = imageStream
                 .mapValues((image) -> {
                     String caption = TensorFlowMatcher.matchImage(tfLabels, tfGraphDef, image);
                     LOGGER.debug(">>> Sending telegram message with caption {}", caption);
