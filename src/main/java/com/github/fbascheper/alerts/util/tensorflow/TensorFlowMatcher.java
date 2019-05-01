@@ -102,7 +102,7 @@ public final class TensorFlowMatcher {
             // label for an image.
             try (Session s = new Session(g);
                  @SuppressWarnings({"unchecked", "rawtypes"})
-                 Tensor<Float> result = (Tensor<Float>) s.runner().feed("input", image).fetch("output").run().get(0)) {
+                 Tensor<Float> result = (Tensor<Float>) s.runner().feed("mobilenetv2_1.00_224_input", image).fetch("dense/Softmax").run().get(0)) {
                 final long[] rshape = result.shape();
                 if (result.numDimensions() != 2 || rshape[0] != 1) {
                     throw new RuntimeException(String.format(

@@ -3,6 +3,7 @@ package com.github.fbascheper.alerts;
 import com.github.fbascheper.alerts.model.avro.SerializableImage;
 import com.github.fbascheper.alerts.model.avro.SerializableSmartLock;
 import com.github.fbascheper.alerts.model.nuki.NukiRestApiResponse;
+import com.github.fbascheper.alerts.model.state.BurglarAlertState;
 import com.github.fbascheper.alerts.util.common.FileUtils;
 import com.github.fbascheper.alerts.util.kafka.KafkaStreamsConfig;
 import com.github.fbascheper.alerts.util.kafka.KafkaTopic;
@@ -21,12 +22,8 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
-import static com.github.fbascheper.alerts.util.mapper.nuki.SmartLockMapper.ALERT_STATE;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -47,12 +44,13 @@ public class BurglarAlertsApplication {
     private static final String BURGLAR_ALERTING_STATE_TOPIC = KafkaTopic.ALERTING_ENABLED_STATE.getName();
     private static final String BURGLAR_ALERTING_STATE_STORE = "burglar-alerting-state-store";
 
-    @SuppressWarnings("Duplicates")
     public static void main(final String[] args) {
 
         // Create TensorFlow objects
-        List<String> tfLabels = FileUtils.readLines("tensorflow/demo/CNN_inception5h/imagenet_comp_graph_label_strings.txt");
-        byte[] tfGgraphDef = FileUtils.readFile("tensorflow/demo/CNN_inception5h/tensorflow_inception_graph.pb");
+        List<String> tfLabels = new ArrayList<>();
+        tfLabels.add("burglar-alert");
+        tfLabels.add("no-burglar-alert");
+        byte[] tfGgraphDef = FileUtils.readFile("tensorflow/model/saved_fine_tuned_model.pb");
 
         Properties streamsConfiguration = KafkaStreamsConfig.buildStreamsConfiguration(
                 "tf-burglar-alerts", " /tmp",
@@ -88,11 +86,6 @@ public class BurglarAlertsApplication {
         StreamsBuilder builder = new StreamsBuilder();
 
         // ----------------------------------------------------------------------------------------------------
-        // Construct a KStream from the camera images topic using (filename, image) as key,value pair.
-        KStream<String, byte[]> cameraSourceStream = builder
-                .stream(SOURCE_TOPIC_CAMERA_IMAGES, Consumed.with(Serdes.String(), Serdes.ByteArray()));
-
-        // ----------------------------------------------------------------------------------------------------
         // Construct KStream with SmartLock data from REST Polls to the Nuki Web API
         //
         // - map json response from Nuki API call to to a domain object
@@ -117,11 +110,24 @@ public class BurglarAlertsApplication {
                         .withKeySerde(Serdes.String())
                         .withValueSerde(Serdes.Integer()));
 
+        // ----------------------------------------------------------------------------------------------------
+        // Construct a KStream from the camera images topic using (filename, image) as key,value pair.
+        KStream<String, byte[]> cameraSourceStream = builder
+                .stream(SOURCE_TOPIC_CAMERA_IMAGES, Consumed.with(Serdes.String(), Serdes.ByteArray()));
+
         // Filter out all images when alert state is disabled (i.e. any lock is open)
         KStream<String, byte[]> filteredSourceStream = cameraSourceStream
                 .leftJoin(alertingEnabledGlobalKTable,
-                        (filename, image) -> ALERT_STATE,
-                        (image, enabled) -> enabled.equals(-1) ? image : new byte[]{})
+                        (filename, image) -> SmartLockMapper.ALERT_STATE,
+                        (image, enabled) -> {
+                            if (BurglarAlertState.SEND_MESSAGES_ENABLED.getValue().equals(enabled)) {
+                                LOGGER.debug("   +++ Burglar alert system is enabled --> pass image through to TensorFlow");
+                                return image;
+                            } else {
+                                LOGGER.debug("   --- Burglar alert system is disabled --> discard image");
+                                return new byte[]{};
+                            }
+                        })
                 .filter((key, value) -> value.length > 0);
 
         // Map images into Avro object for serialization
