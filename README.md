@@ -1,6 +1,6 @@
-## Demo application - using TensorFlow and Apache Kafka for a burglar alerts application
+## Using TensorFlow and Apache Kafka for a burglar alerts application
 
-> This project uses a TensorFlow model created by the [TensorFlow Burglar alert model sub project](https://github.com/fbascheper/kafka-tf-burglar-alerts-demo-model)
+> This project uses a TensorFlow model created by the [TensorFlow burglar alert model sub project](https://github.com/fbascheper/kafka-tf-burglar-alerts-demo-model)
 
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/fbascheper/kafka-tf-burglar-alerts-demo/master/LICENSE.txt)
 
@@ -38,6 +38,7 @@ However, there are a few important issues to consider, to facilitate the image d
 
 These issues can be handled by a custom [Kafka Connect value converter](https://github.com/fbascheper/kafka-connect-storage-converters).
 You can simply plug this into the [Kafka Connect FTP converter](https://github.com/Landoop/stream-reactor/commits/master/kafka-connect-ftp).
+See the [JSON configuration file for the FTP converter](compose/local/kafka-connect-config/01-FTP-source-config-landoop.json) for more details.
 
 
 ### Hardware used
