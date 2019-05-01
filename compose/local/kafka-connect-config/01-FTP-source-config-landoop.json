@@ -5,6 +5,12 @@
     "tasks.max": 1,
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "com.github.fbascheper.kafka.connect.converter.image.ImageGrayScaleConverter",
+    "value.converter.resizeTargetWidth": 1024,
+    "value.converter.resizeTargetHeight": -1,
+    "value.converter.cropLeft": 165,
+    "value.converter.cropRight": 200,
+    "value.converter.cropTop": 50,
+    "value.converter.cropBottom": 50,
     "connect.ftp.address": "vsftpd.local:21",
     "connect.ftp.user": "photo",
     "connect.ftp.password": "upload",
@@ -15,6 +21,6 @@
     "connect.ftp.sourcerecordconverter": "com.datamountaineer.streamreactor.connect.ftp.source.NopSourceRecordConverter",
     "connect.ftp.fileconverter": "com.datamountaineer.streamreactor.connect.ftp.source.SimpleFileConverter",
     "connect.ftp.filter": ".*",
-    "connect.ftp.protocol": "ftp"
+    "connect.ftp.protocol": "sftp"
   }
 }
