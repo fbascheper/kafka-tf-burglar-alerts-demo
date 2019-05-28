@@ -4,6 +4,7 @@ import com.github.fbascheper.alerts.model.avro.SerializableImage;
 import com.github.fbascheper.alerts.model.avro.SerializableSmartLock;
 import com.github.fbascheper.alerts.model.nuki.NukiRestApiResponse;
 import com.github.fbascheper.alerts.model.state.BurglarAlertState;
+import com.github.fbascheper.alerts.model.tensorflow.ImageClassification;
 import com.github.fbascheper.alerts.util.common.FileUtils;
 import com.github.fbascheper.alerts.util.kafka.KafkaStreamsConfig;
 import com.github.fbascheper.alerts.util.kafka.KafkaTopic;
@@ -22,7 +23,9 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -47,9 +50,6 @@ public class BurglarAlertsApplication {
     public static void main(final String[] args) {
 
         // Create TensorFlow objects
-        List<String> tfLabels = new ArrayList<>();
-        tfLabels.add("burglar-alert");
-        tfLabels.add("no-burglar-alert");
         byte[] tfGgraphDef = FileUtils.readFile("tensorflow/model/saved_fine_tuned_model.pb");
 
         Properties streamsConfiguration = KafkaStreamsConfig.buildStreamsConfiguration(
@@ -58,7 +58,7 @@ public class BurglarAlertsApplication {
                 KafkaStreamsConfig.KAFKA_SCHEMA_REGISTRY_URL);
 
         KafkaStreams streams = createStreams(
-                streamsConfiguration, KafkaStreamsConfig.KAFKA_SCHEMA_REGISTRY_URL, tfLabels, tfGgraphDef);
+                streamsConfiguration, KafkaStreamsConfig.KAFKA_SCHEMA_REGISTRY_URL, tfGgraphDef);
 
         streams.cleanUp();
         // start processing
@@ -69,7 +69,6 @@ public class BurglarAlertsApplication {
 
     private static KafkaStreams createStreams(Properties streamsConfiguration,
                                               String schemaRegistryUrl,
-                                              List<String> tfLabels,
                                               byte[] tfGraphDef) {
 
         // create and configure Serdes required
@@ -134,12 +133,17 @@ public class BurglarAlertsApplication {
         KStream<String, SerializableImage> imageStream = filteredSourceStream
                 .mapValues((readOnlyKey, value) -> new SerializableImage(readOnlyKey, ByteBuffer.wrap(value)));
 
-        // Stream Processor applying the analytic model
-        KStream<String, TgMessage> telegramPhotoMessage = imageStream
-                .mapValues((image) -> {
-                    String caption = TensorFlowMatcher.matchImage(tfLabels, tfGraphDef, image);
+        KStream<String, ImageClassification> burglarAlertStream = imageStream
+                .mapValues((readOnlyKey, image) -> TensorFlowMatcher.matchImage(tfGraphDef, image))
+//                .filter((key, imgClass) -> imgClass.getClassification() != Classification.NO_BURGLAR_ALERT)
+                ;
+
+        KStream<String, TgMessage> telegramPhotoMessage = burglarAlertStream
+                .mapValues((imageClassification) -> {
+                    String caption = imageClassification.toString();
+
                     LOGGER.debug(">>> Sending telegram message with caption {}", caption);
-                    return TelegramMessageMapper.photoMessage(image, caption);
+                    return TelegramMessageMapper.photoMessage(imageClassification.getImage(), caption);
                 });
 
         // Send prediction information to telegram topic (sink)

@@ -1,6 +1,8 @@
 package com.github.fbascheper.alerts.util.tensorflow;
 
 import com.github.fbascheper.alerts.model.avro.SerializableImage;
+import com.github.fbascheper.alerts.model.tensorflow.Classification;
+import com.github.fbascheper.alerts.model.tensorflow.ImageClassification;
 import org.slf4j.Logger;
 import org.tensorflow.Graph;
 import org.tensorflow.Output;
@@ -8,7 +10,6 @@ import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -29,25 +30,22 @@ public final class TensorFlowMatcher {
     /**
      * Match a given image and return a string that can be used as caption of an alert message.
      *
-     * @param tfLabels   list of labels for all potential image classifications
      * @param tfGraphDef the graph definition used by TensorFlow
      * @param image      image to matched using TensorFlow
      * @return string that can be used as caption of an alert message
      */
-    public static String matchImage(List<String> tfLabels, byte[] tfGraphDef, SerializableImage image) {
+    public static ImageClassification matchImage(byte[] tfGraphDef, SerializableImage image) {
 
         byte[] imageBytes = image.getImageData().array();
 
         try (Tensor tensor = constructAndExecuteGraphToNormalizeImage(imageBytes)) {
             float[] labelProbabilities = executeInceptionGraph(tfGraphDef, tensor);
-            int bestLabelIdx = maxIndex(labelProbabilities);
 
-            String imageClassification = tfLabels.get(bestLabelIdx);
-            float imageProbability = labelProbabilities[bestLabelIdx] * 100f;
-            return String.format("BEST MATCH: for image %s was %s (%.2f%% likely)",
-                    image.getName(), imageClassification, imageProbability);
+            Classification classification = Classification.forLabelProbabilities(labelProbabilities);
+            float probability = labelProbabilities[classification.getIndex()] * 100f;
+
+            return new ImageClassification(image, classification, probability);
         }
-
     }
 
     // ########################################################################################
@@ -117,15 +115,4 @@ public final class TensorFlowMatcher {
             }
         }
     }
-
-    private static int maxIndex(float[] probabilities) {
-        int best = 0;
-        for (int i = 1; i < probabilities.length; ++i) {
-            if (probabilities[i] > probabilities[best]) {
-                best = i;
-            }
-        }
-        return best;
-    }
-
 }
