@@ -135,11 +135,11 @@ public class BurglarAlertsApplication {
 
         KStream<String, ImageClassification> burglarAlertStream = imageStream
                 .mapValues((readOnlyKey, image) -> TensorFlowMatcher.matchImage(tfGraphDef, image))
-//                .filter((key, imgClass) -> imgClass.getClassification() != Classification.NO_BURGLAR_ALERT)
+//                .filter((key, imgClass) -> imgClass.getClassification() == Classification.BURGLAR_ALERT)
                 ;
 
         KStream<String, TgMessage> telegramPhotoMessage = burglarAlertStream
-                .mapValues((imageClassification) -> {
+                .mapValues((readOnlyKey, imageClassification) -> {
                     String caption = imageClassification.toString();
 
                     LOGGER.debug(">>> Sending telegram message with caption {}", caption);
