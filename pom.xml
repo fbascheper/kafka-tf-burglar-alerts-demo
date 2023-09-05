@@ -28,7 +28,7 @@
         <kafka-connect-telegram-avro-model.version>0.1.1</kafka-connect-telegram-avro-model.version>
 
         <confluent.version>5.2.1</confluent.version>
-        <kafka.version>2.2.0-cp2</kafka.version>
+        <kafka.version>5.3.0-ccs</kafka.version>
         <kafka.scala.version>2.12</kafka.scala.version>
         <scala.version>2.12.8</scala.version>
 
